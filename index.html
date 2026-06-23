@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LabData Analytica - Mobile Pro</title>
+    <title>LabData Analytica - Production Pro</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -22,10 +22,9 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: var(--background-color);
             color: var(--text-main);
-            padding-bottom: 90px; /* Space for sticky button */
+            padding-bottom: 90px;
         }
 
-        /* App Header */
         .app-header {
             background: linear-gradient(135deg, #1e40af, #3b82f6);
             color: white;
@@ -36,7 +35,6 @@
             box-shadow: 0 4px 20px rgba(37, 99, 235, 0.2);
         }
 
-        /* Card Setup */
         .setup-card {
             background: var(--surface-color);
             border-radius: 16px;
@@ -46,7 +44,6 @@
             z-index: 10;
         }
 
-        /* Input Cards */
         .card-perlakuan {
             background: var(--surface-color);
             border: 1px solid #e2e8f0;
@@ -68,7 +65,7 @@
             padding: 0.75rem 0.5rem;
             border-radius: 10px;
             background-color: #f1f5f9;
-            border: 1px solid transparent;
+            border: 2px solid transparent;
             color: var(--text-main);
         }
 
@@ -78,7 +75,6 @@
             box-shadow: none;
         }
 
-        /* Modern Tabs */
         .nav-pills {
             background: #e2e8f0;
             padding: 4px;
@@ -90,7 +86,6 @@
             font-weight: 600;
             color: var(--text-muted);
             padding: 10px;
-            transition: all 0.3s ease;
         }
 
         .nav-pills .nav-link.active {
@@ -99,7 +94,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
-        /* Stat Cards for Results */
         .stat-card {
             background: #f8fafc;
             border-radius: 12px;
@@ -109,25 +103,18 @@
         }
         
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--primary-color);
             margin-top: 5px;
         }
 
-        /* Report Template Area */
         #pdf-template {
             background: #ffffff;
             padding: 25px;
             color: #000;
         }
 
-        .table-pdf th {
-            background-color: #f8fafc !important;
-            font-weight: 700;
-        }
-
-        /* Sticky Bottom Bar */
         .bottom-action-bar {
             position: fixed;
             bottom: 0;
@@ -141,11 +128,8 @@
             border-top: 1px solid #e2e8f0;
         }
 
-        .btn-process {
-            border-radius: 12px;
-            padding: 12px;
-            font-size: 1.1rem;
-            letter-spacing: 0.5px;
+        .warning-row {
+            background-color: #fef08a !important; /* Soft yellow for outlier alert */
         }
     </style>
 </head>
@@ -153,14 +137,14 @@
 
 <div class="app-header">
     <div class="container text-center">
-        <h3 class="fw-bold mb-1"><i class="bi bi-flask text-light"></i> LabData Analytica</h3>
-        <p class="mb-0 text-light opacity-75 small">Sistem Analisis Pertanian Cerdas</p>
+        <h3 class="fw-bold mb-1"><i class="bi bi-flask-fill text-light"></i> LabData Analytica</h3>
+        <p class="mb-0 text-light opacity-75 small">Sistem Validasi & Analisis Deskriptif Komprehensif</p>
     </div>
 </div>
 
 <div class="container pt-4">
     <div class="setup-card p-3 mb-4">
-        <label class="form-label fw-bold text-muted small mb-2"><i class="bi bi-sliders"></i> KONFIGURASI PARAMETER</label>
+        <label class="form-label fw-bold text-muted small mb-2"><i class="bi bi-sliders"></i> KONFIGURASI PARAMETER AKTIF</label>
         <div class="d-flex gap-2">
             <select class="form-select form-select-lg fw-bold" id="parameterSelect" style="color: var(--primary-color); border-radius: 10px;" onchange="switchParameter()">
                 <option value="P_Tersedia">P-Tersedia (ppm)</option>
@@ -170,7 +154,7 @@
                 <option value="Al_P">Al-P (ppm)</option>
                 <option value="Fe_P">Fe-P (ppm)</option>
             </select>
-            <button class="btn btn-light border text-danger" onclick="clearCurrentParameterData()" style="border-radius: 10px;">
+            <button class="btn btn-light border text-danger" onclick="clearCurrentParameterData()" style="border-radius: 10px;" title="Reset Form">
                 <i class="bi bi-trash3-fill"></i>
             </button>
         </div>
@@ -184,7 +168,7 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="pills-hasil-tab" data-bs-toggle="pill" data-bs-target="#pills-hasil" type="button" role="tab">
-                <i class="bi bi-clipboard2-data-fill me-1"></i> Analisis
+                <i class="bi bi-clipboard2-data-fill me-1"></i> Hasil Analisis
             </button>
         </li>
     </ul>
@@ -200,7 +184,7 @@
             <div class="setup-card p-4 text-center text-muted" id="emptyResultPlaceholder">
                 <i class="bi bi-inbox fs-1 mb-2 d-block"></i>
                 <p class="mb-0 fw-medium">Belum ada data dianalisis.</p>
-                <small>Silakan input data dan tekan proses.</small>
+                <small>Silakan input data lengkap lalu tekan tombol hitung di bawah.</small>
             </div>
 
             <div id="resultContainer" class="d-none">
@@ -219,17 +203,17 @@
 
                 <div id="pdf-template" class="rounded-4 border shadow-sm mb-4">
                     <div class="text-center mb-4 border-bottom pb-3">
-                        <h5 class="fw-bold mb-1">LAPORAN HASIL UJI LABORATORIUM</h5>
-                        <p class="text-muted small mb-0">Analisis Karakteristik Kimia Tanah Latosol</p>
+                        <h5 class="fw-bold mb-1">LAPORAN REKAPITULASI DATA LABORATORIUM</h5>
+                        <p class="text-muted small mb-0">Analisis Karakteristik Kimia Tanah Latosol Nglanggeran</p>
                     </div>
 
                     <div class="row mb-4" style="font-size: 0.9rem;">
                         <div class="col-6">
-                            <span class="text-muted d-block">Parameter Uji:</span>
+                            <span class="text-muted d-block">Parameter Analisis:</span>
                             <span id="pdfParamName" class="fw-bold text-primary fs-6"></span>
                         </div>
                         <div class="col-6 text-end">
-                            <span class="text-muted d-block">Tanggal Analisis:</span>
+                            <span class="text-muted d-block">Tanggal Cetak:</span>
                             <span id="pdfDate" class="fw-bold"></span>
                         </div>
                     </div>
@@ -237,38 +221,40 @@
                     <div class="row g-2 mb-4">
                         <div class="col-4">
                             <div class="stat-card">
-                                <small class="text-muted fw-bold">RATA-RATA</small>
+                                <small class="text-muted fw-bold" style="font-size: 0.75rem;">GRAND MEAN</small>
                                 <div class="stat-value text-dark" id="statGlobalAvg">0</div>
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="stat-card">
-                                <small class="text-muted fw-bold">TERTINGGI</small>
+                                <small class="text-muted fw-bold" style="font-size: 0.75rem;">NILAI MAX</small>
                                 <div class="stat-value text-success" id="statMax">0</div>
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="stat-card">
-                                <small class="text-muted fw-bold">TERENDAH</small>
+                                <small class="text-muted fw-bold" style="font-size: 0.75rem;">NILAI MIN</small>
                                 <div class="stat-value text-danger" id="statMin">0</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="alert alert-info border-0 p-3 mb-4 rounded-3" style="background-color: #eff6ff;">
-                        <h6 class="fw-bold text-primary mb-1"><i class="bi bi-lightbulb-fill"></i> Insight Kesimpulan:</h6>
+                        <h6 class="fw-bold text-primary mb-1"><i class="bi bi-lightbulb-fill"></i> Ringkasan Hasil & Validasi Ilmiah:</h6>
                         <span id="conclusionBox" class="text-dark" style="font-size: 0.9rem; line-height: 1.5;"></span>
                     </div>
 
                     <div class="table-responsive">
-                        <table class="table table-bordered table-pdf text-center align-middle" style="font-size: 0.85rem;">
-                            <thead>
+                        <table class="table table-bordered text-center align-middle" style="font-size: 0.8rem;">
+                            <thead class="table-light">
                                 <tr>
-                                    <th style="width: 20%;">Perlakuan</th>
-                                    <th style="width: 20%;">U1</th>
-                                    <th style="width: 20%;">U2</th>
-                                    <th style="width: 20%;">U3</th>
-                                    <th style="width: 20%;">Rata-rata</th>
+                                    <th>Perlakuan</th>
+                                    <th>U1</th>
+                                    <th>U2</th>
+                                    <th>U3</th>
+                                    <th>Rata-rata</th>
+                                    <th>SD</th>
+                                    <th>CV (%)</th>
                                 </tr>
                             </thead>
                             <tbody id="resultTableBody">
@@ -284,7 +270,7 @@
 
 <div class="bottom-action-bar" id="bottomActionBar">
     <button class="btn btn-primary w-100 fw-bold btn-process shadow-sm" onclick="processLabData()">
-        <i class="bi bi-cpu-fill me-1"></i> Proses & Kalkulasi Data
+        <i class="bi bi-calculator-fill me-1"></i> Validasi & Hitung Analisis Deskriptif
     </button>
 </div>
 
@@ -292,24 +278,30 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
-    // Konfigurasi Perlakuan
     const PERLAKUAN = ["K0D0", "K0D1", "K0D2", "K1D0", "K1D1", "K1D2", "K2D0", "K2D1", "K2D2", "K3D0", "K3D1", "K3D2"];
+    
+    // Batas ilmiah parameter riset tanah untuk mencegah error data hancur
+    const VALIDASI_ILMIAH = {
+        pH_H2O: { min: 0, max: 14, label: "pH H2O" },
+        pH_KCl: { min: 0, max: 14, label: "pH KCl" },
+        C_Organik: { min: 0, max: 100, label: "C-Organik (%)" },
+        P_Tersedia: { min: 0, max: 2000, label: "P-Tersedia (ppm)" },
+        Al_P: { min: 0, max: 5000, label: "Al-P (ppm)" },
+        Fe_P: { min: 0, max: 5000, label: "Fe-P (ppm)" }
+    };
 
     document.addEventListener("DOMContentLoaded", () => {
         generateMobileFormInputs();
         loadSavedData();
         
-        // Hide bottom bar when on 'Hasil' tab
         const tabs = document.querySelectorAll('button[data-bs-toggle="pill"]');
         tabs.forEach(tab => {
             tab.addEventListener('shown.bs.tab', function (event) {
                 const bottomBar = document.getElementById('bottomActionBar');
                 if(event.target.id === 'pills-hasil-tab') {
-                    bottomBar.style.transform = 'translateY(100%)';
-                    setTimeout(() => bottomBar.style.display = 'none', 200);
+                    bottomBar.style.display = 'none';
                 } else {
                     bottomBar.style.display = 'block';
-                    setTimeout(() => bottomBar.style.transform = 'translateY(0)', 10);
                 }
             });
         });
@@ -322,7 +314,6 @@
         PERLAKUAN.forEach(p => {
             const col = document.createElement("div");
             col.className = "col-12 col-md-6";
-            
             col.innerHTML = `
                 <div class="card-perlakuan p-3">
                     <div class="d-flex justify-content-between align-items-center border-bottom border-light pb-2 mb-3">
@@ -349,7 +340,7 @@
     }
 
     function getStorageKey() {
-        return `lab_pro_${document.getElementById("parameterSelect").value}`;
+        return `prod_lab_v1_${document.getElementById("parameterSelect").value}`;
     }
 
     function autoSave() {
@@ -362,9 +353,8 @@
             if (!dataToSave[p]) dataToSave[p] = {};
             dataToSave[p][`u${u}`] = input.value;
             
-            if(input.value.trim() !== "") {
-                input.style.border = "1px solid transparent";
-            }
+            input.style.border = "2px solid transparent";
+            input.style.backgroundColor = "#f1f5f9";
         });
         localStorage.setItem(getStorageKey(), JSON.stringify(dataToSave));
     }
@@ -375,7 +365,8 @@
         
         inputs.forEach(input => {
             input.value = "";
-            input.style.border = "1px solid transparent";
+            input.style.border = "2px solid transparent";
+            input.style.backgroundColor = "#f1f5f9";
         });
         
         document.getElementById("resultContainer").classList.add("d-none");
@@ -398,149 +389,167 @@
     }
 
     function clearCurrentParameterData() {
-        if(confirm("Yakin ingin mengosongkan seluruh form untuk parameter ini?")) {
+        if(confirm("Apakah Anda yakin ingin menghapus data parameter aktif ini?")) {
             localStorage.removeItem(getStorageKey());
             loadSavedData();
         }
     }
 
-    // MAIN LOGIC PROCESSOR (UPGRADED ANTI-MACET & ANTI-ERROR)
+    // MAIN CORE PROCESSOR & DESCRIPTIVE STATS MECHANISM
     function processLabData() {
         try {
+            const activeParamKey = document.getElementById("parameterSelect").value;
+            const validationRule = VALIDASI_ILMIAH[activeParamKey];
             const inputs = document.querySelectorAll(".input-val");
-            let hasEmpty = false;
+            
             let firstErrorInput = null;
-            const computedData = [];
-            let allRawValues = [];
+            let hasEmpty = false;
+            let hasInvalidFormat = false;
+            let hasScientificViolation = false;
 
-            // Reset styling ke kondisi awal
+            // Cache DOM values dalam memori untuk optimasi performa (High Performance Traversal)
+            const inputMap = {};
             inputs.forEach(input => {
-                input.style.border = "1px solid transparent";
-                input.style.backgroundColor = "#f1f5f9";
+                const p = input.getAttribute("data-perlakuan");
+                const u = input.getAttribute("data-ulangan");
+                if (!inputMap[p]) inputMap[p] = {};
+                inputMap[p][u] = input;
             });
 
-            // 1. Validasi Box Kosong
-            for (let input of inputs) {
-                if (input.value.trim() === "") {
-                    hasEmpty = true;
-                    input.style.border = "2px solid #ef4444";
-                    if(!firstErrorInput) firstErrorInput = input;
+            // Tahap 1 & 2: Validasi Terintegrasi
+            PERLAKUAN.forEach(p => {
+                for (let u = 1; u <= 3; u++) {
+                    const inputEl = inputMap[p][u];
+                    const rawVal = inputEl.value.trim();
+
+                    if (rawVal === "") {
+                        hasEmpty = true;
+                        inputEl.style.border = "2px solid #ef4444";
+                        if (!firstErrorInput) firstErrorInput = inputEl;
+                    } else {
+                        const cleanVal = rawVal.replace(/,/g, '.');
+                        const floatVal = parseFloat(cleanVal);
+
+                        if (isNaN(floatVal)) {
+                            hasInvalidFormat = true;
+                            inputEl.style.border = "2px solid #ef4444";
+                            inputEl.style.backgroundColor = "#fee2e2";
+                            if (!firstErrorInput) firstErrorInput = inputEl;
+                        } else if (floatVal < validationRule.min || floatVal > validationRule.max) {
+                            hasScientificViolation = true;
+                            inputEl.style.border = "2px solid #f59e0b"; // Oranye untuk anomali sains
+                            inputEl.style.backgroundColor = "#fef3c7";
+                            if (!firstErrorInput) firstErrorInput = inputEl;
+                        }
+                    }
                 }
-            }
+            });
 
             if (hasEmpty) {
-                alert("⚠️ Ada kotak yang belum diisi. Silakan cek yang bergaris merah!");
+                alert("⚠️ Validasi Gagal: Terdapat kotak ulangan yang belum terisi. Mohon lengkapi seluruh data!");
                 firstErrorInput.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
 
-            // 2. Validasi Format Angka (Mencari Karakter Gaib/Spasi)
-            let hasNaN = false;
-            for (let input of inputs) {
-                let cleanValue = input.value.trim().replace(/,/g, '.');
-                let floatValue = parseFloat(cleanValue);
-                
-                if (isNaN(floatValue)) {
-                    hasNaN = true;
-                    input.style.border = "2px solid #ef4444";
-                    input.style.backgroundColor = "#fee2e2"; 
-                    if(!firstErrorInput) firstErrorInput = input;
-                }
-            }
-
-            if (hasNaN) {
-                alert("⚠️ Ditemukan format angka yang aneh (terselip spasi tak terlihat, huruf, atau tanda aneh dari hasil copy-paste). Silakan hapus isi kotak yang berwarna MERAH MUDA dan ketik ulang angkanya secara manual!");
+            if (hasInvalidFormat) {
+                alert("⚠️ Validasi Gagal: Terselip karakter bukan angka atau spasi ilegal hasil copy-paste. Silakan bersihkan kotak berwarna merah muda!");
                 firstErrorInput.scrollIntoView({ behavior: "smooth", block: "center" });
                 return;
             }
 
-            // 3. Kalkulasi Aman (Jika Lolos Validasi)
+            if (hasScientificViolation) {
+                alert(`⚠️ Batas Ilmiah Dilanggar: Nilai parameter ${validationRule.label} tidak masuk akal secara metodologi riset tanah (Rentang valid: ${validationRule.min} - ${validationRule.max}). Silakan koreksi kotak berwarna kuning tua!`);
+                firstErrorInput.scrollIntoView({ behavior: "smooth", block: "center" });
+                return;
+            }
+
+            // Tahap 3: Pemrosesan Analisis Deskriptif Eksakta
+            const computedData = [];
+            let allRawValues = [];
+            let highVarianceCount = 0;
+
             PERLAKUAN.forEach(p => {
-                const getVal = (u) => {
-                    const el = document.querySelector(`.input-val[data-perlakuan="${p}"][data-ulangan="${u}"]`);
-                    return parseFloat(el.value.trim().replace(/,/g, '.'));
-                };
+                const u1 = parseFloat(inputMap[p]["1"].value.trim().replace(/,/g, '.'));
+                const u2 = parseFloat(inputMap[p]["2"].value.trim().replace(/,/g, '.'));
+                const u3 = parseFloat(inputMap[p]["3"].value.trim().replace(/,/g, '.'));
 
-                const u1 = getVal(1);
-                const u2 = getVal(2);
-                const u3 = getVal(3);
-                
                 allRawValues.push(u1, u2, u3);
+
+                // Hitung Mean (Rata-rata)
                 const avg = (u1 + u2 + u3) / 3;
 
+                // Hitung Standar Deviasi Sampel (n-1)
+                const variance = ((Math.pow(u1 - avg, 2) + Math.pow(u2 - avg, 2) + Math.pow(u3 - avg, 2)) / 2);
+                const sd = Math.sqrt(variance);
+
+                // Hitung Coefficient of Variation (CV %)
+                const cv = avg > 0 ? (sd / avg) * 100 : 0;
+
+                if (cv > 15) highVarianceCount++;
+
                 computedData.push({
-                    perlakuan: p,
-                    u1: u1,
-                    u2: u2,
-                    u3: u3,
-                    avg: avg
+                    perlakuan: p, u1: u1, u2: u2, u3: u3, avg: avg, sd: sd, cv: cv
                 });
             });
 
-            // Kalkulasi Statistik Global
+            // Statistik Makro Global
             const globalMax = Math.max(...allRawValues);
             const globalMin = Math.min(...allRawValues);
             const globalSum = allRawValues.reduce((a, b) => a + b, 0);
             const globalAvg = globalSum / allRawValues.length;
 
-            // Update UI Statistik
+            // Render Output ke Layar
             document.getElementById("statMax").innerText = globalMax.toFixed(2);
             document.getElementById("statMin").innerText = globalMin.toFixed(2);
             document.getElementById("statGlobalAvg").innerText = globalAvg.toFixed(2);
 
             renderResultTable(computedData);
-            generateAutomatedConclusion(computedData, globalMax, globalMin);
+            generateAutomatedConclusion(computedData, validationRule.label, highVarianceCount);
 
-            // Buka Container Hasil
+            // Buka View Tab Hasil Murni Tanpa Kergantungan Bootstrap JS (Brave Friendly)
             document.getElementById("emptyResultPlaceholder").classList.add("d-none");
             document.getElementById("resultContainer").classList.remove("d-none");
             
-            // ==========================================
-            // PAKSA PINDAH TAB TANPA BOOTSTRAP JS
-            // (Anti-Macet & Tembus Ad-Blocker Brave)
-            // ==========================================
-            
-            // Matikan Tab Input
             document.getElementById("pills-input-tab").classList.remove("active");
             document.getElementById("pills-input").classList.remove("show", "active");
-
-            // Nyalakan Tab Hasil
             document.getElementById("pills-hasil-tab").classList.add("active");
             document.getElementById("pills-hasil").classList.add("show", "active");
-
-            // Sembunyikan tombol "Proses" di bawah
             document.getElementById('bottomActionBar').style.display = 'none';
-            // ==========================================
 
-            // Scroll mulus ke atas
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
         } catch (error) {
-            console.error("Error Detail:", error);
-            alert("Error Sistem: " + error.message);
+            console.error(error);
+            alert("Runtime Error: " + error.message);
         }
     }
 
     function renderResultTable(data) {
         const tbody = document.getElementById("resultTableBody");
         tbody.innerHTML = "";
+        
         data.forEach(row => {
             const tr = document.createElement("tr");
+            
+            // Berikan penanda baris kuning (High Variance Flag) jika CV melampaui batas homogenitas 15%
+            if (row.cv > 15) {
+                tr.className = "warning-row";
+            }
+
             tr.innerHTML = `
                 <td class="fw-bold">${row.perlakuan}</td>
                 <td>${row.u1.toFixed(2)}</td>
                 <td>${row.u2.toFixed(2)}</td>
                 <td>${row.u3.toFixed(2)}</td>
-                <td class="table-primary fw-bold" style="color: var(--primary-color)">${row.avg.toFixed(3)}</td>
+                <td class="fw-bold text-primary">${row.avg.toFixed(3)}</td>
+                <td class="text-muted">${row.sd.toFixed(3)}</td>
+                <td class="${row.cv > 15 ? 'text-danger fw-bold' : 'text-success'}">${row.cv.toFixed(2)}%</td>
             `;
             tbody.appendChild(tr);
         });
     }
 
-    function generateAutomatedConclusion(data, maxVal, minVal) {
-        const paramSelect = document.getElementById("parameterSelect");
-        const paramName = paramSelect.options[paramSelect.selectedIndex].text;
-        
+    function generateAutomatedConclusion(data, paramLabel, alertCount) {
         let highestRow = data[0];
         let lowestRow = data[0];
         
@@ -549,36 +558,43 @@
             if (row.avg < lowestRow.avg) lowestRow = row;
         });
 
-        document.getElementById("pdfParamName").innerText = paramName.toUpperCase();
+        document.getElementById("pdfParamName").innerText = paramLabel.toUpperCase();
         document.getElementById("pdfDate").innerText = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
 
+        let alertNotes = alertCount > 0 
+            ? `<br><br><span class="text-danger fw-bold">⚠️ PERINGATAN INTEGRITAS:</span> Ditemukan <strong>${alertCount} perlakuan</strong> dengan nilai CV > 15% (baris kuning). Hal ini mengindikasikan sebaran data antar ulangan kurang homogen, disarankan cek ulang data mentah lab Anda sebelum masuk uji ANOVA.`
+            : `<br><br><span class="text-success fw-bold">✓ INTEGRITAS DATA OK:</span> Seluruh kombinasi perlakuan memiliki nilai CV < 15%, memenuhi syarat homogenitas varians untuk analisis statistik lanjutan.`;
+
         document.getElementById("conclusionBox").innerHTML = `
-            Berdasarkan matriks data di atas, pemberian perlakuan <strong>${highestRow.perlakuan}</strong> sukses memberikan peningkatan rata-rata paling optimal untuk uji ${paramName} dengan angka <strong>${highestRow.avg.toFixed(3)}</strong>.<br><br>
-            Sebaliknya, rata-rata terendah tercatat pada perlakuan <strong>${lowestRow.perlakuan}</strong> (${lowestRow.avg.toFixed(3)}).
+            Rata-rata capaian tertinggi didapatkan oleh kombinasi perlakuan <strong>${highestRow.perlakuan}</strong> dengan nilai rata-rata sebesar <strong>${highestRow.avg.toFixed(3)}</strong>. 
+            Sedangkan performa nilai rata-rata terendah berada pada perlakuan <strong>${lowestRow.perlakuan}</strong> yaitu sebesar <strong>${lowestRow.avg.toFixed(3)}</strong>.
+            ${alertNotes}
         `;
     }
 
+    // Secure Encapuslated CSV Export Mechanism (Mencegah Kolom Pecah di Excel)
     function exportToCSV() {
         const param = document.getElementById("parameterSelect").value;
         const rows = [
-            ["Laporan Rekapitulasi Data Analitik Laboratorium"],
-            ["Parameter Terpilih", param],
+            ['"LAPORAN DATA REKAPITULASI LABORATORIUM"'],
+            ['"Parameter Uji"', `"${param}"`],
             [],
-            ["Kode Perlakuan", "Ulangan 1", "Ulangan 2", "Ulangan 3", "Rata-rata"]
+            ['"Perlakuan"', '"Ulangan 1"', '"Ulangan 2"', '"Ulangan 3"', '"Rata-rata"', '"Standar Deviasi"', '"CV (%)"']
         ];
 
         const tableRows = document.querySelectorAll("#resultTableBody tr");
         tableRows.forEach(tr => {
             const cells = tr.querySelectorAll("td");
-            const rowData = Array.from(cells).map(td => td.innerText);
+            // Bungkus setiap string sel dengan tanda kutip ganda ("") secara ketat
+            const rowData = Array.from(cells).map(td => `"${td.innerText.replace(/"/g, '""')}"`);
             rows.push(rowData);
         });
 
-        let csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + rows.map(e => e.join(",")).join("\n");
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `Analisis_${param}.csv`);
+        link.setAttribute("download", `Rekap_Lab_${param}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -587,10 +603,9 @@
     function exportToPDF() {
         const param = document.getElementById("parameterSelect").value;
         const element = document.getElementById("pdf-template");
-        
         const opt = {
             margin:       [15, 15, 15, 15],
-            filename:     `Cetak_${param}.pdf`,
+            filename:     `Laporan_Lab_${param}.pdf`,
             image:        { type: 'jpeg', quality: 1 },
             html2canvas:  { scale: 2, backgroundColor: '#ffffff', useCORS: true },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
