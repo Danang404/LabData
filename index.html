@@ -401,6 +401,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <script>
     const PERLAKUAN = ["K0D0", "K0D1", "K0D2", "K1D0", "K1D1", "K1D2", "K2D0", "K2D1", "K2D2", "K3D0", "K3D1", "K3D2"];
@@ -1028,6 +1029,9 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
 
+                const PW = 210, PH = 297, ML = 14, MR = 14, MT = 14, MB = 18;
+                const CW = PW - ML - MR;
+
                 const param = document.getElementById("parameterSelect").value;
                 const paramLabel = document.getElementById("pdfParamName").innerText || param;
                 const researcher = document.getElementById("pdfResearcher").innerText || '-';
@@ -1036,302 +1040,351 @@
                 const grandMean = document.getElementById("statGlobalAvg").innerText;
                 const valMax = document.getElementById("statMax").innerText;
                 const valMin = document.getElementById("statMin").innerText;
-                const conclusionText = document.getElementById("conclusionBox").innerText;
+                // Strip special chars from conclusion
+                const conclusionRaw = document.getElementById("conclusionBox").innerText;
+                const conclusionText = conclusionRaw
+                    .replace(/[\u2713\u2714\u2705]/g, '[OK]')
+                    .replace(/[\u26A0\u26a0\uFE0F]/g, '[!]')
+                    .replace(/[^\x00-\x7F\u00C0-\u024F]/g, '?');
 
-                const PW = 210, PH = 297;
-                const ML = 14, MR = 14, MT = 14, MB = 14;
-                const CW = PW - ML - MR;
                 let y = MT;
-                let pageNum = 1;
 
-                // ===================== HELPERS =====================
-                function checkPage(needed) {
-                    if (y + needed > PH - MB - 8) {
-                        addPageNumber();
-                        doc.addPage();
-                        pageNum++;
-                        y = MT;
-                        drawPageHeader();
-                    }
+                // -------- HELPERS --------
+                function safeText(str) {
+                    if (!str) return '';
+                    return String(str).replace(/[^\x00-\x7F\u00C0-\u024F]/g, '');
                 }
 
-                function addPageNumber() {
+                function pageFooter() {
+                    const total = '{TOTAL}'; // placeholder, replaced at end
+                    doc.setDrawColor(226, 232, 240);
+                    doc.setLineWidth(0.3);
+                    doc.line(ML, PH - MB + 4, PW - MR, PH - MB + 4);
                     doc.setFontSize(7);
-                    doc.setFont('helvetica', 'normal');
+                    doc.setFont('helvetica', 'italic');
                     doc.setTextColor(150, 150, 150);
-                    doc.text('Halaman ' + doc.internal.getCurrentPageInfo().pageNumber + ' / {total}',
-                        PW - MR, PH - 6, { align: 'right' });
+                    doc.text('LabData Analytica - Sistem Analisis Deskriptif Laboratorium', ML, PH - MB + 8);
+                    doc.text('Hal. ' + doc.internal.getCurrentPageInfo().pageNumber,
+                        PW - MR, PH - MB + 8, { align: 'right' });
                 }
 
-                function drawPageHeader() {
-                    // Light blue gradient bar
+                function pageHeader() {
+                    // Blue header bar
+                    doc.setFillColor(30, 64, 175);
+                    doc.rect(0, 0, PW, 13, 'F');
                     doc.setFillColor(37, 99, 235);
-                    doc.rect(0, 0, PW, 11, 'F');
-                    doc.setFillColor(59, 130, 246);
-                    doc.rect(0, 5, PW, 6, 'F');
-                    // Title text - white
-                    doc.setTextColor(255, 255, 255);
-                    doc.setFontSize(9);
+                    doc.rect(0, 8, PW, 5, 'F');
+
+                    doc.setFontSize(10);
                     doc.setFont('helvetica', 'bold');
-                    doc.text('LAPORAN REKAPITULASI DATA LABORATORIUM', PW / 2, 7, { align: 'center' });
+                    doc.setTextColor(255, 255, 255);
+                    doc.text('LAPORAN REKAPITULASI DATA LABORATORIUM', PW / 2, 8.5, { align: 'center' });
+
+                    doc.setFontSize(7.5);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(186, 230, 253);
+                    doc.text('Analisis Karakteristik Kimia Tanah Latosol Nglanggeran', PW / 2, 11.8, { align: 'center' });
+
                     doc.setTextColor(0, 0, 0);
-                    y = 16;
+                    y = 18;
                 }
 
-                function sectionTitle(txt, r, g, b) {
-                    checkPage(12);
-                    doc.setFillColor(r || 37, g || 99, b || 235);
-                    doc.roundedRect(ML, y, CW, 7.5, 1.5, 1.5, 'F');
-                    doc.setTextColor(255, 255, 255);
+                function sectionBar(title, r, g, b) {
+                    if (y + 10 > PH - MB) { newPage(); }
+                    doc.setFillColor(r, g, b);
+                    doc.rect(ML, y, CW, 8, 'F');
+                    // Left accent
+                    doc.setFillColor(255, 255, 255, 0.4);
+                    doc.rect(ML, y, 3, 8, 'F');
                     doc.setFontSize(8.5);
                     doc.setFont('helvetica', 'bold');
-                    doc.text(txt, ML + 4, y + 5.2);
+                    doc.setTextColor(255, 255, 255);
+                    doc.text(title, ML + 6, y + 5.5);
                     doc.setTextColor(0, 0, 0);
                     y += 10;
                 }
 
-                function drawHLine(lw, r, g, b) {
-                    doc.setDrawColor(r || 220, g || 220, b || 220);
-                    doc.setLineWidth(lw || 0.25);
-                    doc.line(ML, y, ML + CW, y);
+                function newPage() {
+                    pageFooter();
+                    doc.addPage();
+                    pageHeader();
                 }
 
-                function tableHeader(cols, widths, rh) {
-                    checkPage(rh);
-                    doc.setFillColor(241, 245, 249);
-                    doc.setDrawColor(203, 213, 225);
-                    doc.setLineWidth(0.25);
-                    let x = ML;
-                    cols.forEach((h, i) => {
-                        doc.rect(x, y, widths[i], rh, 'FD');
-                        doc.setFont('helvetica', 'bold');
-                        doc.setFontSize(8);
-                        doc.setTextColor(30, 41, 59);
-                        doc.text(h, x + widths[i] / 2, y + rh / 2 + 1.5, { align: 'center' });
-                        x += widths[i];
-                    });
-                    y += rh;
+                function checkY(needed) {
+                    if (y + needed > PH - MB) newPage();
                 }
 
-                function tableRow(cells, widths, rh, bgs, fws, colors) {
-                    checkPage(rh);
-                    doc.setDrawColor(203, 213, 225);
-                    doc.setLineWidth(0.2);
-                    let x = ML;
-                    cells.forEach((cell, i) => {
-                        const bg = (bgs && bgs[i]) || [255, 255, 255];
-                        doc.setFillColor(...bg);
-                        doc.rect(x, y, widths[i], rh, 'FD');
-                        doc.setFont('helvetica', (fws && fws[i]) || 'normal');
-                        doc.setFontSize(7.5);
-                        const col = (colors && colors[i]) || [15, 23, 42];
-                        doc.setTextColor(...col);
-                        // Wrap text if needed
-                        const lines = doc.splitTextToSize(String(cell), widths[i] - 2);
-                        const ty = lines.length > 1 ? y + 2.5 : y + rh / 2 + 1.5;
-                        doc.text(lines, x + widths[i] / 2, ty, { align: 'center' });
-                        x += widths[i];
-                    });
-                    y += rh;
-                }
+                // -------- START BUILDING --------
+                pageHeader();
 
-                // ===================== PAGE 1 =====================
-                drawPageHeader();
+                // --- INFO SECTION ---
+                const col2x = ML + CW / 2 + 4;
 
-                // Subtitle
-                doc.setFontSize(8);
-                doc.setFont('helvetica', 'italic');
-                doc.setTextColor(100, 116, 139);
-                doc.text('Analisis Karakteristik Kimia Tanah Latosol Nglanggeran', PW / 2, y, { align: 'center' });
-                y += 5;
-                drawHLine(0.4, 226, 232, 240);
+                // Separator line
+                doc.setDrawColor(226, 232, 240);
+                doc.setLineWidth(0.4);
+                doc.line(ML, y, PW - MR, y);
                 y += 5;
 
-                // Info grid
-                const col2x = ML + CW / 2 + 5;
-                doc.setFontSize(7.5);
-
-                // Row 1
-                doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139);
+                // Row 1 labels
+                doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139);
                 doc.text('Parameter Analisis:', ML, y);
                 doc.text('Tanggal Cetak:', col2x, y);
-                y += 4.5;
-                doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(37, 99, 235);
-                doc.text(paramLabel, ML, y);
-                doc.setTextColor(15, 23, 42); doc.setFontSize(8.5);
-                doc.text(tanggal, col2x, y);
+                y += 4;
+                // Row 1 values
+                doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(37, 99, 235);
+                doc.text(safeText(paramLabel), ML, y);
+                doc.setFontSize(8.5); doc.setTextColor(15, 23, 42);
+                doc.text(safeText(tanggal), col2x, y);
                 y += 5.5;
 
-                // Row 2
-                doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(100, 116, 139);
+                // Row 2 labels
+                doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 116, 139);
                 doc.text('Nama Peneliti:', ML, y);
                 if (metode) doc.text('Metode:', col2x, y);
-                y += 4.5;
-                doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(15, 23, 42);
-                doc.text(researcher, ML, y);
-                if (metode) {
-                    doc.setTextColor(6, 182, 212);
-                    doc.text(metode, col2x, y);
-                }
+                y += 4;
+                // Row 2 values
+                doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(15, 23, 42);
+                doc.text(safeText(researcher), ML, y);
+                if (metode) { doc.setTextColor(2, 132, 199); doc.text(safeText(metode), col2x, y); }
                 doc.setTextColor(0, 0, 0);
                 y += 7;
 
-                drawHLine(0.4, 226, 232, 240);
+                // Separator
+                doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.4);
+                doc.line(ML, y, PW - MR, y);
                 y += 5;
 
-                // Stat cards
-                const cardW = (CW - 8) / 3;
-                const statCards = [
-                    { label: 'GRAND MEAN', val: grandMean, tc: [30, 41, 59] },
-                    { label: 'NILAI MAX', val: valMax, tc: [22, 163, 74] },
-                    { label: 'NILAI MIN', val: valMin, tc: [220, 38, 38] }
+                // --- STAT CARDS ---
+                const cw3 = (CW - 6) / 3;
+                const stats = [
+                    { label: 'GRAND MEAN', val: grandMean, r: 30, g: 41, b: 59 },
+                    { label: 'NILAI MAKSIMUM', val: valMax, r: 22, g: 163, b: 74 },
+                    { label: 'NILAI MINIMUM', val: valMin, r: 220, g: 38, b: 38 }
                 ];
-                statCards.forEach((c, i) => {
-                    const cx = ML + i * (cardW + 4);
+                checkY(17);
+                stats.forEach((s, i) => {
+                    const cx = ML + i * (cw3 + 3);
                     doc.setFillColor(248, 250, 252);
                     doc.setDrawColor(226, 232, 240);
                     doc.setLineWidth(0.3);
-                    doc.roundedRect(cx, y, cardW, 15, 2, 2, 'FD');
-                    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 116, 139);
-                    doc.text(c.label, cx + cardW / 2, y + 4.5, { align: 'center' });
-                    doc.setFontSize(14); doc.setFont('helvetica', 'bold'); doc.setTextColor(...c.tc);
-                    doc.text(c.val, cx + cardW / 2, y + 12, { align: 'center' });
+                    doc.roundedRect(cx, y, cw3, 14, 1.5, 1.5, 'FD');
+                    doc.setFontSize(6); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 116, 139);
+                    doc.text(s.label, cx + cw3 / 2, y + 4, { align: 'center' });
+                    doc.setFontSize(13); doc.setTextColor(s.r, s.g, s.b);
+                    doc.text(s.val, cx + cw3 / 2, y + 11.5, { align: 'center' });
                 });
                 doc.setTextColor(0, 0, 0);
-                y += 19;
+                y += 18;
 
-                // Ringkasan
-                sectionTitle('Ringkasan Hasil & Validasi Ilmiah', 30, 58, 138);
+                // --- RINGKASAN ---
+                sectionBar('Ringkasan Hasil & Validasi Ilmiah', 30, 58, 138);
+                const cLines = doc.splitTextToSize(safeText(conclusionText), CW - 6);
+                const cH = cLines.length * 4.8 + 8;
+                checkY(cH);
                 doc.setFillColor(239, 246, 255);
                 doc.setDrawColor(147, 197, 253);
                 doc.setLineWidth(0.3);
-                const cLines = doc.splitTextToSize(conclusionText, CW - 8);
-                const cH = cLines.length * 4.8 + 7;
-                checkPage(cH);
-                doc.roundedRect(ML, y, CW, cH, 2, 2, 'FD');
+                doc.roundedRect(ML, y, CW, cH, 1.5, 1.5, 'FD');
                 doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(15, 23, 42);
-                doc.text(cLines, ML + 4, y + 5.5);
-                y += cH + 6;
+                doc.text(cLines, ML + 3, y + 5.5);
+                y += cH + 7;
 
-                // ===================== HARKAT TABLE =====================
-                const harkatThead = document.getElementById('harkatThead');
+                // -------- autoTable helper --------
+                function buildAutoTable(head, body, columnStyles, didParseCell) {
+                    doc.autoTable({
+                        startY: y,
+                        head: [head],
+                        body: body,
+                        margin: { left: ML, right: MR },
+                        tableWidth: CW,
+                        styles: {
+                            fontSize: 8,
+                            cellPadding: { top: 2.5, right: 2, bottom: 2.5, left: 2 },
+                            lineColor: [203, 213, 225],
+                            lineWidth: 0.25,
+                            valign: 'middle',
+                            halign: 'center',
+                            textColor: [15, 23, 42],
+                            font: 'helvetica',
+                        },
+                        headStyles: {
+                            fillColor: [241, 245, 249],
+                            textColor: [30, 41, 59],
+                            fontStyle: 'bold',
+                            fontSize: 8,
+                        },
+                        alternateRowStyles: { fillColor: [248, 250, 252] },
+                        columnStyles: columnStyles || {},
+                        didParseCell: didParseCell || null,
+                        didDrawPage: function(data) {
+                            pageHeader();
+                            pageFooter();
+                        },
+                    });
+                    y = doc.lastAutoTable.finalY + 6;
+                }
+
+                // -------- HARKAT TABLE --------
                 const harkatTbody = document.getElementById('harkatTbody');
+                const harkatThead = document.getElementById('harkatThead');
                 if (harkatTbody && harkatTbody.children.length > 0) {
                     const htitleEl = harkatThead ? harkatThead.querySelector('th[colspan]') : null;
-                    const htitle = htitleEl ? htitleEl.innerText : 'Tabel Harkat & Klasifikasi Nilai';
-                    sectionTitle(htitle, 109, 40, 217);
+                    const htitle = htitleEl ? safeText(htitleEl.innerText) : 'Tabel Harkat & Klasifikasi Nilai';
+                    checkY(10);
+                    sectionBar(htitle, 109, 40, 217);
 
-                    const hW = [CW * 0.5, CW * 0.5];
-                    const hHeaders = harkatThead ? Array.from(harkatThead.querySelectorAll('tr:last-child th')).map(th => th.innerText) : ['Nilai', 'Harkat'];
-                    tableHeader(hHeaders, hW, 7);
+                    const hHead = ['Nilai', 'Harkat'];
+                    const hBody = Array.from(harkatTbody.querySelectorAll('tr')).map(tr =>
+                        Array.from(tr.querySelectorAll('td')).map(td => safeText(td.innerText))
+                    );
 
-                    const HARKAT_BG = {
-                        'Sangat Rendah': [254, 226, 226], 'Rendah': [254, 243, 199],
-                        'Sedang': [254, 249, 195], 'Tinggi': [220, 252, 231],
-                        'Sangat Tinggi': [219, 234, 254], 'Sangat Masam': [254, 226, 226],
-                        'Masam': [254, 243, 199], 'Agak Masam': [254, 249, 195],
-                        'Netral': [220, 252, 231], 'Agak Alkalis': [219, 234, 254], 'Alkalis': [237, 233, 254]
+                    const HBGMAP = {
+                        'Sangat Rendah': [254,226,226], 'Rendah': [254,243,199],
+                        'Sedang': [254,249,195], 'Tinggi': [220,252,231],
+                        'Sangat Tinggi': [219,234,254], 'Sangat Masam': [254,226,226],
+                        'Masam': [254,243,199], 'Agak Masam': [254,249,195],
+                        'Netral': [220,252,231], 'Agak Alkalis': [219,234,254], 'Alkalis': [237,233,254]
                     };
 
-                    Array.from(harkatTbody.querySelectorAll('tr')).forEach(tr => {
-                        const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText);
-                        const bg = HARKAT_BG[cells[1]] || [255, 255, 255];
-                        tableRow(cells, hW, 6.5, [bg, bg], ['normal', 'bold']);
-                    });
-                    y += 5;
+                    buildAutoTable(hHead, hBody,
+                        { 0: { cellWidth: CW * 0.5, halign: 'center' }, 1: { cellWidth: CW * 0.5, fontStyle: 'bold' } },
+                        function(data) {
+                            if (data.section === 'body') {
+                                const harkat = data.row.raw[1];
+                                const bg = HBGMAP[harkat];
+                                if (bg) { data.cell.styles.fillColor = bg; data.cell.styles.alternateRow = false; }
+                            }
+                        }
+                    );
                 }
 
-                // ===================== INTERPRETASI PER PERLAKUAN =====================
+                // -------- INTERPRETASI TABLE --------
                 const interBody = document.getElementById('interpretasiBody');
                 if (interBody && interBody.children.length > 0) {
-                    sectionTitle('Interpretasi Harkat Per Perlakuan', 5, 150, 105);
-                    const iW = [CW * 0.33, CW * 0.33, CW * 0.34];
-                    tableHeader(['Perlakuan', 'Rata-rata', 'Harkat'], iW, 7);
+                    checkY(10);
+                    sectionBar('Interpretasi Harkat Per Perlakuan', 5, 150, 105);
 
-                    const HARKAT_BG = {
-                        'Sangat Rendah': [254, 226, 226], 'Rendah': [254, 243, 199],
-                        'Sedang': [254, 249, 195], 'Tinggi': [220, 252, 231],
-                        'Sangat Tinggi': [219, 234, 254], 'Sangat Masam': [254, 226, 226],
-                        'Masam': [254, 243, 199], 'Agak Masam': [254, 249, 195],
-                        'Netral': [220, 252, 231], 'Agak Alkalis': [219, 234, 254], 'Alkalis': [237, 233, 254]
+                    const iHead = ['Perlakuan', 'Rata-rata', 'Harkat'];
+                    const iBody = Array.from(interBody.querySelectorAll('tr')).map(tr =>
+                        Array.from(tr.querySelectorAll('td')).map(td => safeText(td.innerText))
+                    );
+
+                    const HBGMAP2 = {
+                        'Sangat Rendah': [254,226,226], 'Rendah': [254,243,199],
+                        'Sedang': [254,249,195], 'Tinggi': [220,252,231],
+                        'Sangat Tinggi': [219,234,254], 'Sangat Masam': [254,226,226],
+                        'Masam': [254,243,199], 'Agak Masam': [254,249,195],
+                        'Netral': [220,252,231], 'Agak Alkalis': [219,234,254], 'Alkalis': [237,233,254]
                     };
 
-                    Array.from(interBody.querySelectorAll('tr')).forEach((tr, ri) => {
-                        const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText);
-                        const hkText = cells[2] || '';
-                        const hkBg = HARKAT_BG[hkText] || [255, 255, 255];
-                        const rowBg = ri % 2 === 0 ? [255, 255, 255] : [248, 250, 252];
-                        tableRow(cells, iW, 6.5,
-                            [rowBg, rowBg, hkBg],
-                            ['bold', 'normal', 'bold'],
-                            [[15,23,42],[15,23,42],[15,23,42]]
-                        );
-                    });
-                    y += 5;
+                    buildAutoTable(iHead, iBody,
+                        {
+                            0: { cellWidth: CW * 0.33, fontStyle: 'bold' },
+                            1: { cellWidth: CW * 0.33 },
+                            2: { cellWidth: CW * 0.34, fontStyle: 'bold' }
+                        },
+                        function(data) {
+                            if (data.section === 'body' && data.column.index === 0) {
+                                data.cell.styles.fontStyle = 'bold';
+                            }
+                            if (data.section === 'body' && data.column.index === 2) {
+                                const harkat = data.row.raw[2];
+                                const bg = HBGMAP2[harkat];
+                                if (bg) data.cell.styles.fillColor = bg;
+                            }
+                        }
+                    );
                 }
 
-                // ===================== DELTA pH =====================
+                // -------- DELTA pH TABLE --------
                 const deltaSec = document.getElementById('deltaPHSection');
                 const deltaBody = document.getElementById('deltaPHBody');
                 if (deltaSec && !deltaSec.classList.contains('d-none') && deltaBody && deltaBody.children.length > 0) {
-                    sectionTitle('Interpretasi Selisih Delta pH (pH KCl - pH H2O)', 124, 58, 237);
-                    const dW = [CW*0.2, CW*0.17, CW*0.17, CW*0.15, CW*0.31];
-                    tableHeader(['Perlakuan','pH H2O','pH KCl','Delta pH','Interpretasi Muatan'], dW, 7);
+                    checkY(10);
+                    sectionBar('Interpretasi Selisih Delta pH (pH KCl - pH H2O)', 124, 58, 237);
 
-                    Array.from(deltaBody.querySelectorAll('tr')).forEach((tr, ri) => {
-                        const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText);
-                        const interp = cells[4] || '';
-                        let dBg = [255,255,255];
-                        if (interp.includes('Negatif')) dBg = [254,226,226];
-                        else if (interp.includes('Positif')) dBg = [219,234,254];
-                        else if (interp.includes('Netral')) dBg = [220,252,231];
-                        const rb = ri%2===0?[255,255,255]:[248,250,252];
-                        tableRow(cells, dW, 6.5, [rb,rb,rb,rb,dBg], ['bold','normal','normal','bold','normal']);
-                    });
-                    y += 4;
-                    const note = 'Catatan: Delta pH = pH(KCl) - pH(H2O). Nilai negatif = muatan negatif dominan (KTK besar); Positif = muatan positif dominan (KTA besar); Nol = muatan netral.';
-                    const nLines = doc.splitTextToSize(note, CW);
-                    checkPage(nLines.length * 4 + 3);
-                    doc.setFontSize(7); doc.setFont('helvetica','italic'); doc.setTextColor(100,116,139);
+                    const dHead = ['Perlakuan', 'pH H2O', 'pH KCl', 'Delta pH', 'Interpretasi Muatan'];
+                    const dBody = Array.from(deltaBody.querySelectorAll('tr')).map(tr =>
+                        Array.from(tr.querySelectorAll('td')).map(td => safeText(td.innerText))
+                    );
+
+                    buildAutoTable(dHead, dBody,
+                        {
+                            0: { cellWidth: CW * 0.18, fontStyle: 'bold' },
+                            1: { cellWidth: CW * 0.16 },
+                            2: { cellWidth: CW * 0.16 },
+                            3: { cellWidth: CW * 0.15, fontStyle: 'bold' },
+                            4: { cellWidth: CW * 0.35 }
+                        },
+                        function(data) {
+                            if (data.section === 'body' && data.column.index === 4) {
+                                const interp = data.row.raw[4] || '';
+                                if (interp.includes('Negatif')) data.cell.styles.fillColor = [254,226,226];
+                                else if (interp.includes('Positif')) data.cell.styles.fillColor = [219,234,254];
+                                else if (interp.includes('Netral')) data.cell.styles.fillColor = [220,252,231];
+                            }
+                        }
+                    );
+
+                    checkY(10);
+                    const noteStr = 'Catatan: Delta pH = pH(KCl) - pH(H2O). Nilai negatif = muatan negatif dominan (KTK besar); Positif = muatan positif dominan (KTA besar); Nol = muatan netral.';
+                    const nLines = doc.splitTextToSize(noteStr, CW);
+                    doc.setFontSize(7); doc.setFont('helvetica', 'italic'); doc.setTextColor(100, 116, 139);
                     doc.text(nLines, ML, y);
                     y += nLines.length * 4 + 5;
                 }
 
-                // ===================== DATA TABLE =====================
-                sectionTitle('Tabel Data Ulangan & Statistik Deskriptif', 15, 118, 110);
-                const dW2 = [CW*0.18, CW*0.13, CW*0.13, CW*0.13, CW*0.16, CW*0.13, CW*0.14];
-                tableHeader(['Perlakuan','U1','U2','U3','Rata-rata','SD','CV (%)'], dW2, 7);
+                // -------- DATA ULANGAN TABLE --------
+                checkY(10);
+                sectionBar('Tabel Data Ulangan & Statistik Deskriptif', 15, 118, 110);
 
-                const BLUE = [37,99,235];
-                const RED = [220,38,38];
-                const GREEN = [22,163,74];
+                const dHead2 = ['Perlakuan', 'U1', 'U2', 'U3', 'Rata-rata', 'SD', 'CV (%)'];
+                const dataRows = Array.from(document.querySelectorAll('#resultTableBody tr'));
+                const dBody2 = dataRows.map(tr =>
+                    Array.from(tr.querySelectorAll('td')).map(td => safeText(td.innerText))
+                );
+                const warnRows = dataRows.map(tr => tr.classList.contains('warning-row'));
 
-                Array.from(document.querySelectorAll('#resultTableBody tr')).forEach((tr, ri) => {
-                    const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText);
-                    const isWarn = tr.classList.contains('warning-row');
-                    const rb = isWarn ? [254,240,138] : (ri%2===0?[255,255,255]:[248,250,252]);
-                    const cvColor = isWarn ? RED : GREEN;
-                    tableRow(cells, dW2, 6.5,
-                        [rb,rb,rb,rb,rb,rb,rb],
-                        ['bold','normal','normal','normal','bold','normal','bold'],
-                        [[15,23,42],[15,23,42],[15,23,42],[15,23,42],BLUE,[15,23,42],cvColor]
-                    );
-                });
+                buildAutoTable(dHead2, dBody2,
+                    {
+                        0: { cellWidth: CW * 0.2, fontStyle: 'bold' },
+                        1: { cellWidth: CW * 0.12 },
+                        2: { cellWidth: CW * 0.12 },
+                        3: { cellWidth: CW * 0.12 },
+                        4: { cellWidth: CW * 0.18 },
+                        5: { cellWidth: CW * 0.13 },
+                        6: { cellWidth: CW * 0.13 }
+                    },
+                    function(data) {
+                        if (data.section === 'body') {
+                            const isWarn = warnRows[data.row.index];
+                            if (isWarn) data.cell.styles.fillColor = [254, 240, 138];
+                            if (data.column.index === 4) { data.cell.styles.textColor = [37, 99, 235]; data.cell.styles.fontStyle = 'bold'; }
+                            if (data.column.index === 6) {
+                                data.cell.styles.textColor = isWarn ? [220, 38, 38] : [22, 163, 74];
+                                data.cell.styles.fontStyle = 'bold';
+                            }
+                        }
+                    }
+                );
 
-                y += 5;
-                drawHLine(0.3, 226, 232, 240);
-                y += 3;
-                doc.setFontSize(6.5); doc.setFont('helvetica','italic'); doc.setTextColor(150,150,150);
-                doc.text('Dokumen ini digenerate otomatis oleh LabData Analytica', PW/2, y, {align:'center'});
-                y += 3.5;
-                doc.text('Baris kuning = CV > 15% (perlu pengecekan homogenitas ulangan)', PW/2, y, {align:'center'});
+                // Footer note on last page
+                checkY(8);
+                doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.3);
+                doc.line(ML, y, PW - MR, y); y += 3;
+                doc.setFontSize(7); doc.setFont('helvetica', 'italic'); doc.setTextColor(150, 150, 150);
+                doc.text('Baris kuning = CV > 15% (perlu pengecekan homogenitas data ulangan)', PW / 2, y, { align: 'center' });
 
-                // Add page numbers to all pages
+                // Draw footer on all pages
                 const total = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= total; i++) {
                     doc.setPage(i);
-                    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(150,150,150);
-                    doc.text('Halaman ' + i + ' / ' + total, PW - MR, PH - 6, { align: 'right' });
+                    doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.3);
+                    doc.line(ML, PH - 12, PW - MR, PH - 12);
+                    doc.setFontSize(7); doc.setFont('helvetica', 'italic'); doc.setTextColor(150, 150, 150);
+                    doc.text('LabData Analytica', ML, PH - 8);
+                    doc.text('Halaman ' + i + ' / ' + total, PW - MR, PH - 8, { align: 'right' });
                 }
 
                 doc.save('Laporan_Lab_' + param + '.pdf');
@@ -1339,10 +1392,10 @@
 
             } catch(err) {
                 console.error(err);
-                alert('Error saat generate PDF: ' + err.message);
+                alert('Gagal generate PDF: ' + err.message);
                 document.getElementById('loadingOverlay').style.display = 'none';
             }
-        }, 500);
+        }, 600);
     }
 </script>
 
