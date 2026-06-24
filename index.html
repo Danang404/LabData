@@ -158,6 +158,12 @@
     <div class="setup-card p-3 mb-4">
         <label class="form-label fw-bold text-muted small mb-2"><i class="bi bi-sliders"></i> KONFIGURASI PARAMETER AKTIF</label>
         
+        <div class="row g-2 mb-2">
+            <div class="col-12">
+                <input type="text" class="form-control fw-bold" id="namaResearcher" placeholder="👤 Nama Peneliti / Penganalisis..." style="border-radius: 10px; font-size: 1rem;" oninput="autoSave()">
+            </div>
+        </div>
+
         <div class="row g-2">
             <div class="col-12 col-md-8">
                 <select class="form-select form-select-lg fw-bold w-100" id="parameterSelect" style="color: var(--primary-color); border-radius: 10px;" onchange="switchParameter()">
@@ -178,6 +184,23 @@
                 <button class="btn btn-light border text-danger w-100 h-100" onclick="clearCurrentParameterData()" style="border-radius: 10px;" title="Reset Form">
                     <i class="bi bi-trash3-fill"></i>
                 </button>
+            </div>
+        </div>
+
+        <!-- Metode P-Tersedia (tampil hanya jika P-Tersedia dipilih) -->
+        <div class="row g-2 mt-2" id="metodePSection" style="display:none!important;">
+            <div class="col-12">
+                <label class="form-label fw-bold text-muted small mb-1"><i class="bi bi-flask"></i> METODE ANALISIS P-TERSEDIA</label>
+                <div class="d-flex gap-2">
+                    <div class="form-check form-check-inline flex-fill p-3 rounded-3 border" style="cursor:pointer;" id="labelBray">
+                        <input class="form-check-input" type="radio" name="metodeP" id="metodeBray" value="Bray" checked onchange="toggleMetodeP()">
+                        <label class="form-check-label fw-bold" for="metodeBray">Metode Bray</label>
+                    </div>
+                    <div class="form-check form-check-inline flex-fill p-3 rounded-3 border" style="cursor:pointer;" id="labelOlsen">
+                        <input class="form-check-input" type="radio" name="metodeP" id="metodeOlsen" value="Olsen" onchange="toggleMetodeP()">
+                        <label class="form-check-label fw-bold" for="metodeOlsen">Metode Olsen</label>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -238,6 +261,14 @@
                             <span class="text-muted d-block">Tanggal Cetak:</span>
                             <span id="pdfDate" class="fw-bold"></span>
                         </div>
+                        <div class="col-6 mt-2">
+                            <span class="text-muted d-block">Nama Peneliti:</span>
+                            <span id="pdfResearcher" class="fw-bold"></span>
+                        </div>
+                        <div class="col-6 mt-2 text-end" id="pdfMetodeWrapper">
+                            <span class="text-muted d-block">Metode:</span>
+                            <span id="pdfMetode" class="fw-bold text-info"></span>
+                        </div>
                     </div>
 
                     <div class="row g-2 mb-4">
@@ -264,6 +295,56 @@
                     <div class="alert alert-info border-0 p-3 mb-4 rounded-3" style="background-color: #eff6ff;">
                         <h6 class="fw-bold text-primary mb-1"><i class="bi bi-lightbulb-fill"></i> Ringkasan Hasil & Validasi Ilmiah:</h6>
                         <span id="conclusionBox" class="text-dark" style="font-size: 0.9rem; line-height: 1.5;"></span>
+                    </div>
+
+                    <!-- TABEL HARKAT ANALISIS -->
+                    <div class="mb-4" id="harkatSection">
+                        <h6 class="fw-bold mb-3" style="color: #7c3aed;"><i class="bi bi-table"></i> Tabel Harkat & Klasifikasi Nilai</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm text-center align-middle mb-0" id="harkatTable" style="font-size: 0.82rem;">
+                                <thead id="harkatThead"></thead>
+                                <tbody id="harkatTbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- INTERPRETASI PER PERLAKUAN -->
+                    <div class="mb-4" id="interpretasiSection">
+                        <h6 class="fw-bold mb-3" style="color: #059669;"><i class="bi bi-patch-check-fill"></i> Interpretasi Harkat Per Perlakuan</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered text-center align-middle" id="interpretasiTable" style="font-size: 0.8rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Perlakuan</th>
+                                        <th>Rata-rata</th>
+                                        <th>Harkat</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="interpretasiBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- DELTA pH (hanya tampil jika ada pH H2O dan pH KCl) -->
+                    <div class="mb-4 d-none" id="deltaPHSection">
+                        <div class="alert border-0 p-3 rounded-3" style="background-color: #fdf4ff;">
+                            <h6 class="fw-bold mb-2" style="color: #7c3aed;"><i class="bi bi-delta"></i> Interpretasi Selisih ΔpH (pH KCl − pH H₂O)</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered text-center align-middle mb-2" id="deltaPHTable" style="font-size: 0.8rem;">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Perlakuan</th>
+                                            <th>pH H₂O</th>
+                                            <th>pH KCl</th>
+                                            <th>ΔpH</th>
+                                            <th>Interpretasi Muatan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="deltaPHBody"></tbody>
+                                </table>
+                            </div>
+                            <small class="text-muted"><strong>Catatan:</strong> ΔpH = pH(KCl) − pH(H₂O). Nilai negatif → muatan negatif dominan (KTK besar); Positif → muatan positif dominan (KTA besar); Nol → muatan netral.</small>
+                        </div>
                     </div>
 
                     <div class="table-responsive">
@@ -333,9 +414,252 @@
         Fe_P: { min: 0, max: 5000, label: "Fe-P (ppm)" }
     };
 
+    // ===================== HARKAT DEFINITIONS =====================
+    const HARKAT_DEFS = {
+        pH_H2O: {
+            title: "Harkat pH H₂O (Menurut PPT)",
+            header: ["Nilai", "Harkat"],
+            rows: [
+                { max: 4.5, label: "Sangat Masam", color: "#fee2e2" },
+                { min: 4.5, max: 5.5, label: "Masam", color: "#fef3c7" },
+                { min: 5.6, max: 6.5, label: "Agak Masam", color: "#fef9c3" },
+                { min: 6.6, max: 7.5, label: "Netral", color: "#dcfce7" },
+                { min: 7.6, max: 8.5, label: "Agak Alkalis", color: "#dbeafe" },
+                { min: 8.5, label: "Alkalis", color: "#ede9fe" }
+            ],
+            classify: v => {
+                if (v < 4.5) return { label: "Sangat Masam", color: "#ef4444" };
+                if (v <= 5.5) return { label: "Masam", color: "#f59e0b" };
+                if (v <= 6.5) return { label: "Agak Masam", color: "#eab308" };
+                if (v <= 7.5) return { label: "Netral", color: "#22c55e" };
+                if (v <= 8.5) return { label: "Agak Alkalis", color: "#3b82f6" };
+                return { label: "Alkalis", color: "#7c3aed" };
+            }
+        },
+        pH_KCl: {
+            title: "Harkat pH KCl",
+            header: ["Nilai", "Harkat"],
+            rows: [
+                { max: 4.5, label: "Sangat Masam", color: "#fee2e2" },
+                { min: 4.5, max: 5.5, label: "Masam", color: "#fef3c7" },
+                { min: 5.6, max: 6.5, label: "Agak Masam", color: "#fef9c3" },
+                { min: 6.6, max: 7.5, label: "Netral", color: "#dcfce7" },
+                { min: 7.6, max: 8.5, label: "Agak Alkalis", color: "#dbeafe" },
+                { min: 8.5, label: "Alkalis", color: "#ede9fe" }
+            ],
+            classify: v => {
+                if (v < 4.5) return { label: "Sangat Masam", color: "#ef4444" };
+                if (v <= 5.5) return { label: "Masam", color: "#f59e0b" };
+                if (v <= 6.5) return { label: "Agak Masam", color: "#eab308" };
+                if (v <= 7.5) return { label: "Netral", color: "#22c55e" };
+                if (v <= 8.5) return { label: "Agak Alkalis", color: "#3b82f6" };
+                return { label: "Alkalis", color: "#7c3aed" };
+            }
+        },
+        C_Organik: {
+            title: "Harkat C-Organik (%) (Menurut PPT)",
+            header: ["Nilai C Organik (%)", "Harkat"],
+            rows: [
+                { max: 1.0, label: "Sangat Rendah", color: "#fee2e2" },
+                { min: 1.0, max: 2.0, label: "Rendah", color: "#fef3c7" },
+                { min: 2.01, max: 3.0, label: "Sedang", color: "#fef9c3" },
+                { min: 3.01, max: 5.0, label: "Tinggi", color: "#dcfce7" },
+                { min: 5.0, label: "Sangat Tinggi", color: "#dbeafe" }
+            ],
+            classify: v => {
+                if (v < 1.0) return { label: "Sangat Rendah", color: "#ef4444" };
+                if (v <= 2.0) return { label: "Rendah", color: "#f59e0b" };
+                if (v <= 3.0) return { label: "Sedang", color: "#eab308" };
+                if (v <= 5.0) return { label: "Tinggi", color: "#22c55e" };
+                return { label: "Sangat Tinggi", color: "#3b82f6" };
+            }
+        },
+        P_Tersedia_Bray: {
+            title: "Harkat P-Tersedia Metode Bray (Menurut PPT)",
+            header: ["P₂O₅ Terukur (ppm)", "Harkat"],
+            rows: [
+                { max: 10, label: "Sangat Rendah", color: "#fee2e2" },
+                { min: 10, max: 15.0, label: "Rendah", color: "#fef3c7" },
+                { min: 16, max: 25.0, label: "Sedang", color: "#fef9c3" },
+                { min: 26, max: 35.0, label: "Tinggi", color: "#dcfce7" },
+                { min: 35, label: "Sangat Tinggi", color: "#dbeafe" }
+            ],
+            classify: v => {
+                if (v < 10) return { label: "Sangat Rendah", color: "#ef4444" };
+                if (v <= 15) return { label: "Rendah", color: "#f59e0b" };
+                if (v <= 25) return { label: "Sedang", color: "#eab308" };
+                if (v <= 35) return { label: "Tinggi", color: "#22c55e" };
+                return { label: "Sangat Tinggi", color: "#3b82f6" };
+            }
+        },
+        P_Tersedia_Olsen: {
+            title: "Harkat P-Tersedia Metode Olsen (Menurut PPT)",
+            header: ["P₂O₅ Terukur (ppm)", "Harkat"],
+            rows: [
+                { max: 10, label: "Sangat Rendah", color: "#fee2e2" },
+                { min: 10, max: 25.0, label: "Rendah", color: "#fef3c7" },
+                { min: 26, max: 45.0, label: "Sedang", color: "#fef9c3" },
+                { min: 46, max: 60.0, label: "Tinggi", color: "#dcfce7" },
+                { min: 60, label: "Sangat Tinggi", color: "#dbeafe" }
+            ],
+            classify: v => {
+                if (v < 10) return { label: "Sangat Rendah", color: "#ef4444" };
+                if (v <= 25) return { label: "Rendah", color: "#f59e0b" };
+                if (v <= 45) return { label: "Sedang", color: "#eab308" };
+                if (v <= 60) return { label: "Tinggi", color: "#22c55e" };
+                return { label: "Sangat Tinggi", color: "#3b82f6" };
+            }
+        },
+        Al_P: {
+            title: "Harkat Al-P (ppm)",
+            header: ["Nilai Al-P (ppm)", "Harkat"],
+            rows: [
+                { max: 500, label: "Rendah", color: "#dcfce7" },
+                { min: 500, max: 1500, label: "Sedang", color: "#fef9c3" },
+                { min: 1500, label: "Tinggi", color: "#fee2e2" }
+            ],
+            classify: v => {
+                if (v < 500) return { label: "Rendah", color: "#22c55e" };
+                if (v <= 1500) return { label: "Sedang", color: "#eab308" };
+                return { label: "Tinggi", color: "#ef4444" };
+            }
+        },
+        Fe_P: {
+            title: "Harkat Fe-P (ppm)",
+            header: ["Nilai Fe-P (ppm)", "Harkat"],
+            rows: [
+                { max: 500, label: "Rendah", color: "#dcfce7" },
+                { min: 500, max: 1500, label: "Sedang", color: "#fef9c3" },
+                { min: 1500, label: "Tinggi", color: "#fee2e2" }
+            ],
+            classify: v => {
+                if (v < 500) return { label: "Rendah", color: "#22c55e" };
+                if (v <= 1500) return { label: "Sedang", color: "#eab308" };
+                return { label: "Tinggi", color: "#ef4444" };
+            }
+        }
+    };
+
+    function getMetodeP() {
+        const olsen = document.getElementById('metodeOlsen');
+        return olsen && olsen.checked ? 'Olsen' : 'Bray';
+    }
+
+    function toggleMetodeP() {
+        const brayLabel = document.getElementById('labelBray');
+        const olsenLabel = document.getElementById('labelOlsen');
+        const bray = document.getElementById('metodeBray');
+        if (bray.checked) {
+            brayLabel.style.background = '#eff6ff';
+            brayLabel.style.borderColor = '#2563eb';
+            olsenLabel.style.background = '';
+            olsenLabel.style.borderColor = '';
+        } else {
+            olsenLabel.style.background = '#eff6ff';
+            olsenLabel.style.borderColor = '#2563eb';
+            brayLabel.style.background = '';
+            brayLabel.style.borderColor = '';
+        }
+    }
+
+    function getHarkatKey(paramKey) {
+        if (paramKey === 'P_Tersedia') {
+            return getMetodeP() === 'Olsen' ? 'P_Tersedia_Olsen' : 'P_Tersedia_Bray';
+        }
+        return paramKey;
+    }
+
+    function renderHarkatTable(paramKey) {
+        const hk = getHarkatKey(paramKey);
+        const def = HARKAT_DEFS[hk];
+        if (!def) { document.getElementById('harkatSection').style.display = 'none'; return; }
+        document.getElementById('harkatSection').style.display = '';
+
+        const thead = document.getElementById('harkatThead');
+        const tbody = document.getElementById('harkatTbody');
+        
+        thead.innerHTML = `<tr class="table-primary"><th colspan="2" class="text-start">${def.title}</th></tr><tr><th>${def.header[0]}</th><th>${def.header[1]}</th></tr>`;
+        
+        tbody.innerHTML = def.rows.map(r => {
+            let rangeStr = '';
+            if (r.max !== undefined && r.min === undefined) rangeStr = `< ${r.max}`;
+            else if (r.min !== undefined && r.max !== undefined) rangeStr = `${r.min} – ${r.max}`;
+            else rangeStr = `> ${r.min}`;
+            return `<tr style="background:${r.color}"><td>${rangeStr}</td><td><strong>${r.label}</strong></td></tr>`;
+        }).join('');
+    }
+
+    function renderInterpretasiTable(computedData, paramKey) {
+        const hk = getHarkatKey(paramKey);
+        const def = HARKAT_DEFS[hk];
+        const tbody = document.getElementById('interpretasiBody');
+        tbody.innerHTML = '';
+        if (!def) return;
+
+        computedData.forEach(row => {
+            const klass = def.classify(row.avg);
+            tbody.innerHTML += `<tr>
+                <td class="fw-bold">${row.perlakuan}</td>
+                <td>${row.avg.toFixed(3)}</td>
+                <td><span class="badge rounded-pill px-3 py-2" style="background-color:${klass.color}; color:#1e293b; font-size:0.8rem;">${klass.label}</span></td>
+            </tr>`;
+        });
+    }
+
+    // Delta pH logic - needs both pH_H2O and pH_KCl stored data
+    function tryRenderDeltaPH(activeParam) {
+        const section = document.getElementById('deltaPHSection');
+        const h2oData = localStorage.getItem('prod_lab_v4_pH_H2O');
+        const kclData = localStorage.getItem('prod_lab_v4_pH_KCl');
+        
+        if (!h2oData || !kclData) { section.classList.add('d-none'); return; }
+        
+        try {
+            const h2o = JSON.parse(h2oData);
+            const kcl = JSON.parse(kclData);
+            
+            const tbody = document.getElementById('deltaPHBody');
+            tbody.innerHTML = '';
+            let hasAny = false;
+
+            PERLAKUAN.forEach(p => {
+                const h2oVals = [h2o[p]?.u1, h2o[p]?.u2, h2o[p]?.u3].map(Number).filter(v => !isNaN(v));
+                const kclVals = [kcl[p]?.u1, kcl[p]?.u2, kcl[p]?.u3].map(Number).filter(v => !isNaN(v));
+                if (h2oVals.length === 3 && kclVals.length === 3) {
+                    hasAny = true;
+                    const avgH2O = h2oVals.reduce((a,b)=>a+b,0)/3;
+                    const avgKCl = kclVals.reduce((a,b)=>a+b,0)/3;
+                    const delta = avgKCl - avgH2O;
+                    
+                    let interp, color;
+                    if (delta < 0) { interp = `ΔpH Negatif → Muatan Negatif Dominan (KTK ↑)`; color = '#fee2e2'; }
+                    else if (delta > 0) { interp = `ΔpH Positif → Muatan Positif Dominan (KTA ↑)`; color = '#dbeafe'; }
+                    else { interp = `ΔpH Nol → Muatan Netral`; color = '#dcfce7'; }
+
+                    tbody.innerHTML += `<tr>
+                        <td class="fw-bold">${p}</td>
+                        <td>${avgH2O.toFixed(3)}</td>
+                        <td>${avgKCl.toFixed(3)}</td>
+                        <td class="fw-bold">${delta >= 0 ? '+' : ''}${delta.toFixed(3)}</td>
+                        <td style="background:${color}; font-size:0.75rem;">${interp}</td>
+                    </tr>`;
+                }
+            });
+
+            if (hasAny) section.classList.remove('d-none');
+            else section.classList.add('d-none');
+        } catch(e) { section.classList.add('d-none'); }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
         generateMobileFormInputs();
         loadSavedData();
+        // Initialize P method section visibility
+        const initialParam = document.getElementById("parameterSelect").value;
+        if (initialParam === 'P_Tersedia') {
+            document.getElementById('metodePSection').style.cssText = 'display:flex!important';
+        }
+        toggleMetodeP();
     });
 
     function switchTab(tabName) {
@@ -444,6 +768,13 @@
     }
 
     function switchParameter() {
+        const param = document.getElementById("parameterSelect").value;
+        const metodeSection = document.getElementById("metodePSection");
+        if (param === "P_Tersedia") {
+            metodeSection.style.cssText = "display:flex!important";
+        } else {
+            metodeSection.style.cssText = "display:none!important";
+        }
         loadSavedData();
     }
 
@@ -585,6 +916,9 @@
 
                 renderResultTable(computedData);
                 generateAutomatedConclusion(computedData, validationRule.label, highVarianceCount);
+                renderHarkatTable(activeParamKey);
+                renderInterpretasiTable(computedData, activeParamKey);
+                tryRenderDeltaPH(activeParamKey);
 
                 document.getElementById("emptyResultPlaceholder").classList.add("d-none");
                 document.getElementById("resultContainer").classList.remove("d-none");
@@ -634,6 +968,18 @@
 
         document.getElementById("pdfParamName").innerText = paramLabel.toUpperCase();
         document.getElementById("pdfDate").innerText = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+        
+        const researcherName = document.getElementById("namaResearcher").value.trim();
+        document.getElementById("pdfResearcher").innerText = researcherName || "—";
+        
+        const activeParam = document.getElementById("parameterSelect").value;
+        const metodeWrapper = document.getElementById("pdfMetodeWrapper");
+        if (activeParam === 'P_Tersedia') {
+            metodeWrapper.style.display = '';
+            document.getElementById("pdfMetode").innerText = "Metode " + getMetodeP();
+        } else {
+            metodeWrapper.style.display = 'none';
+        }
 
         let alertNotes = alertCount > 0 
             ? `<br><br><span class="text-danger fw-bold">⚠️ PERINGATAN INTEGRITAS:</span> Ditemukan <strong>${alertCount} perlakuan</strong> dengan nilai CV > 15% (baris kuning). Hal ini mengindikasikan sebaran data antar ulangan kurang homogen, disarankan cek ulang data mentah lab Anda sebelum masuk uji ANOVA.`
